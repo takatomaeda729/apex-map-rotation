@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <!-- スマホ対応: 端末幅に合わせて描画 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apexマップローテ</title>
+  <meta name="description" content="Apex Legends ランクの現在マップ・次のマップ・指定日のマップローテを表示します。" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- ヘッダー -->
+    <header class="site-header">
+      <h1 class="site-title">
+        <span class="title-accent">APEX</span> マップローテーション
+      </h1>
+      <p class="site-sub">ランク / 時刻はすべて日本時間(JST)で表示</p>
+    </header>
+
+    <!-- 現在のマップ（メインカード / 常に現在時刻を表示） -->
+    <section class="card current-card" aria-label="現在のマップ">
+      <div class="visual" id="current-visual"></div>
+      <div class="current-body">
+        <p class="eyebrow">現在のマップ（ランク）</p>
+        <h2 class="current-name" id="current-name">—</h2>
+
+        <p class="countdown-label">切り替えまで</p>
+        <p class="countdown" id="countdown">--:--:--</p>
+
+        <!-- 進行度バー -->
+        <div class="progress" aria-label="現在ローテの経過割合">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <p class="progress-label"><span id="progress-label">0.0%</span> 経過</p>
+      </div>
+    </section>
+
+    <!-- 次のマップ -->
+    <section class="card next-card" aria-label="次のマップ">
+      <div class="visual visual-sm" id="next-visual"></div>
+      <div class="next-body">
+        <p class="eyebrow">次のマップ</p>
+        <h3 class="next-name" id="next-name">—</h3>
+        <p class="next-start">開始 <span id="next-start">—</span></p>
+      </div>
+    </section>
+
+    <!-- 日付指定のローテーション -->
+    <section class="card day-card" aria-label="指定日のローテーション">
+      <p class="eyebrow">日付を選んでその日のローテを表示</p>
+
+      <!-- 日付ナビ -->
+      <div class="date-bar">
+        <button class="date-nav" id="prev-day" aria-label="前の日">◀</button>
+        <input type="date" id="date-input" class="date-input" />
+        <button class="date-nav" id="next-day" aria-label="次の日">▶</button>
+        <button class="date-today" id="today-btn">今日</button>
+      </div>
+
+      <p class="day-heading" id="day-heading">—</p>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <footer class="site-footer">
+      <p>ローテ定義は <code>rotation-data.js</code> を編集して更新できます。</p>
+    </footer>
+
+  </div>
+
+  <!-- データ定義を先に読み込む -->
+  <script src="rotation-data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

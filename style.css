@@ -1,0 +1,306 @@
+/* ============================================================================
+ *  style.css — Apex マップローテ ダークテーマ
+ *  背景 #0d1117 系 / アクセントに Apex レッド #da292a
+ *  スマホ対応（375px 幅で崩れないレスポンシブ）
+ * ========================================================================== */
+
+:root {
+  --bg:        #0d1117;   /* ベース背景 */
+  --bg-card:   #161b22;   /* カード背景 */
+  --bg-elev:   #1c2230;   /* 一段明るい面 */
+  --border:    #2a3140;   /* 罫線 */
+  --text:      #e6edf3;   /* 基本テキスト */
+  --text-dim:  #8b949e;   /* 補助テキスト */
+  --accent:    #da292a;   /* Apex レッド */
+  --accent-2:  #ff5a4d;   /* アクセント明 */
+  --radius:    14px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1a2230 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", system-ui, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+/* ---------- ヘッダー ---------- */
+.site-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.site-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 0 0 4px;
+}
+.title-accent {
+  color: var(--accent);
+  font-style: italic;
+  letter-spacing: 0.06em;
+}
+.site-sub {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+/* ---------- 日付コントロール ---------- */
+.date-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  flex-wrap: wrap;
+}
+.date-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 9px 10px;
+  color-scheme: dark; /* ネイティブ日付ピッカーをダーク表示に */
+}
+.date-nav {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 0.9rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.date-nav:hover { background: #262d3d; }
+.date-today {
+  appearance: none;
+  border: none;
+  background: linear-gradient(135deg, var(--accent), #a51f20);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0 14px;
+  height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(218, 41, 42, 0.3);
+}
+.day-heading {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+/* ---------- カード共通 ---------- */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+
+/* ---------- ビジュアル（画像 / プレースホルダー） ---------- */
+.visual {
+  width: 100%;
+  height: 190px;
+  background-color: var(--bg-elev);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.visual.is-placeholder::after {
+  /* プレースホルダー時に薄い質感を重ねる */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,0.03) 0 2px,
+      transparent 2px 10px);
+}
+.visual-sm { height: 96px; }
+
+/* ---------- 現在のマップカード ---------- */
+.current-body {
+  padding: 18px 20px 22px;
+}
+.current-name {
+  margin: 0 0 16px;
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.countdown-label {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.countdown {
+  margin: 2px 0 16px;
+  font-size: 2.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(218, 41, 42, 0.35);
+}
+
+/* 進行度バー */
+.progress {
+  width: 100%;
+  height: 10px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 999px;
+  transition: width 0.5s linear;
+}
+.progress-label {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* ---------- 次のマップカード ---------- */
+.next-card {
+  display: flex;
+  align-items: stretch;
+}
+.next-card .visual-sm {
+  width: 120px;
+  flex-shrink: 0;
+  height: auto;
+}
+.next-body {
+  padding: 14px 16px;
+  flex: 1;
+}
+.next-name {
+  margin: 0 0 6px;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.next-start {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.next-start span {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- タイムライン ---------- */
+.day-card { padding: 16px; }
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 8px;
+}
+.timeline-row.is-now {
+  background: rgba(218, 41, 42, 0.10);
+  border: 1px solid rgba(218, 41, 42, 0.35);
+}
+.timeline-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  background-size: cover;
+}
+.timeline-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  width: 106px;
+  flex-shrink: 0;
+}
+.timeline-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.timeline-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+/* ---------- フッター ---------- */
+.site-footer {
+  text-align: center;
+  margin-top: 8px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+.site-footer code {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: var(--text);
+}
+
+/* ============================================================================
+ *  レスポンシブ（375px 幅などスマホ向け微調整）
+ * ========================================================================== */
+@media (max-width: 420px) {
+  .wrap { padding: 18px 12px 40px; }
+  .site-title { font-size: 1.25rem; }
+  .current-name { font-size: 1.7rem; }
+  .countdown { font-size: 2.1rem; }
+  .visual { height: 150px; }
+
+  /* 次のマップカードは縦積みにして崩れを防ぐ */
+  .next-card { flex-direction: column; }
+  .next-card .visual-sm { width: 100%; height: 90px; }
+
+  .timeline-time { width: 96px; font-size: 0.8rem; }
+  .timeline-name { font-size: 0.9rem; }
+}
