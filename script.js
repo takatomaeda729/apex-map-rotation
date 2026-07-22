@@ -12,8 +12,28 @@
  *  定数
  * -------------------------------------------------------------------------- */
 const CONFIG_KEY = "lupin-config-v1"; // 設定の localStorage キー
+const TOKEN_KEY = "lupin-gh-token";   // GitHub トークンの localStorage キー
+const AUTH_KEY = "lupin-authed";      // 認証済みフラグの sessionStorage キー
 const SITE_TITLE = "ルピンスペシャル";  // ページタイトルのベース
 const DATE_CHIP_DAYS = 7;             // 日付チップの表示日数（今日から）
+
+/*
+ * 設定パネルのパスワード（クライアントサイド）。
+ * ※これは本格的なセキュリティではなく、誤操作・いたずら防止用の簡易ゲートです。
+ *   ソースを読めば分かってしまうため、機密保護の目的には使えません。
+ */
+const SETTINGS_PASSWORD = "rupin";
+
+/* ----------------------------------------------------------------------------
+ *  GitHub リポジトリ情報（全体公開＝直接コミットに使用）
+ *   別のリポジトリに移す場合はここを書き換えてください。
+ * -------------------------------------------------------------------------- */
+const GITHUB_CONFIG = {
+  owner: "takatomaeda729",     // ← あなたの GitHub ユーザー名/Org 名
+  repo: "apex-map-rotation",   // ← リポジトリ名
+  branch: "main",              // ← 公開ブランチ
+  path: "rotation-data.js",    // ← コミット対象ファイル（通常は変更不要）
+};
 
 let config = null;          // 実行時の設定
 let selectedDateStr = null; // 選択中の日付（JST "YYYY-MM-DD"）
@@ -90,11 +110,10 @@ function fmtRemainRough(totalSec) {
 /** 簡易ディープコピー */
 function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
-/** rotation-data.js の定数から作るデフォルト設定 */
+/** rotation-data.js の定数から作るデフォルト設定
+ *  ※ヘッダー文言(SUB_TEXT/SEASON_LABEL)はコード定数のみで管理し、設定には含めない */
 function defaultConfig() {
   return {
-    subText: SUB_TEXT,
-    seasonLabel: SEASON_LABEL,
     mapMaster: clone(MAP_MASTER),
     rotation: {
       label: ROTATION.label,
@@ -123,8 +142,6 @@ function loadConfig() {
         // デフォルトに無いフィールドを補完
         const def = defaultConfig();
         return {
-          subText: parsed.subText ?? def.subText,
-          seasonLabel: parsed.seasonLabel ?? def.seasonLabel,
           mapMaster: parsed.mapMaster,
           rotation: {
             label: parsed.rotation.label ?? def.rotation.label,
@@ -236,10 +253,10 @@ function applyVisual(el, key) {
 
 let el = {};
 
-/** ヘッダー文言を反映 */
+/** ヘッダー文言を反映（rotation-data.js の定数から直接） */
 function renderHeader() {
-  el.seasonLabel.textContent = config.seasonLabel || "";
-  el.subText.textContent = config.subText || "";
+  el.seasonLabel.textContent = (typeof SEASON_LABEL === "string") ? SEASON_LABEL : "";
+  el.subText.textContent = (typeof SUB_TEXT === "string") ? SUB_TEXT : "";
 }
 
 /** 現在マップ・次マップカードを更新（常に現在時刻） */
@@ -354,8 +371,6 @@ function setDate(dateStr) {
 /** config → draft（編集用作業コピー：mapMaster は配列に展開） */
 function configToDraft(c) {
   return {
-    subText: c.subText,
-    seasonLabel: c.seasonLabel,
     baseTime: c.rotation.baseTime,
     label: c.rotation.label,
     schedule: clone(c.rotation.schedule),
@@ -373,8 +388,6 @@ function draftToConfig(d) {
     mapMaster[m.key] = { nameJa: m.nameJa, nameEn: m.nameEn, image: m.image };
   });
   return {
-    subText: d.subText,
-    seasonLabel: d.seasonLabel,
     mapMaster,
     rotation: {
       label: d.label,
@@ -387,10 +400,10 @@ function draftToConfig(d) {
 /** モーダルを開く */
 function openModal() {
   draft = configToDraft(config);
-  document.getElementById("in-subtext").value = draft.subText || "";
-  document.getElementById("in-season").value = draft.seasonLabel || "";
   document.getElementById("in-basetime").value = baseTimeToInput(draft.baseTime);
+  document.getElementById("in-token").value = loadToken();
   document.getElementById("export-section").hidden = true;
+  setSaveStatus("", null);
   renderRotRows();
   renderMapRows();
   el.modalOverlay.hidden = false;
@@ -399,6 +412,46 @@ function openModal() {
 function closeModal() {
   el.modalOverlay.hidden = true;
   document.body.style.overflow = "";
+}
+
+/* ---- 認証（設定を開く前の簡易パスワード） ---- */
+
+/** このセッションで認証済みか */
+function isAuthed() {
+  try { return sessionStorage.getItem(AUTH_KEY) === "1"; } catch (e) { return false; }
+}
+
+/** 歯車クリック：認証済みなら設定へ、未認証なら認証モーダルを表示 */
+function onGearClick() {
+  if (isAuthed()) {
+    openModal();
+  } else {
+    const err = document.getElementById("auth-error");
+    err.hidden = true;
+    const input = document.getElementById("auth-input");
+    input.value = "";
+    el.authOverlay.hidden = false;
+    document.body.style.overflow = "hidden";
+    input.focus();
+  }
+}
+
+function closeAuth() {
+  el.authOverlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+/** パスワード判定：一致で sessionStorage に記録し設定を開く */
+function submitAuth() {
+  const input = document.getElementById("auth-input");
+  if (input.value === SETTINGS_PASSWORD) {
+    try { sessionStorage.setItem(AUTH_KEY, "1"); } catch (e) { /* 続行 */ }
+    closeAuth();
+    openModal();
+  } else {
+    document.getElementById("auth-error").hidden = false;
+    input.select();
+  }
 }
 
 /** ローテーション行を描画 */
@@ -505,22 +558,131 @@ function mkInput(value, placeholder, onInput) {
 }
 function swap(arr, a, b) { const t = arr[a]; arr[a] = arr[b]; arr[b] = t; }
 
-/** モーダルのテキスト系入力を draft に取り込む */
-function syncDraftTexts() {
-  draft.subText = document.getElementById("in-subtext").value;
-  draft.seasonLabel = document.getElementById("in-season").value;
+/** モーダルの入力（基準時刻）を draft に取り込む */
+function syncDraftBase() {
   const bt = document.getElementById("in-basetime").value;
   if (bt) draft.baseTime = inputToBaseTime(bt);
 }
 
-/** 保存して反映 */
-function onSave() {
-  syncDraftTexts();
-  config = draftToConfig(draft);
-  saveConfig(config);
-  // 選択日が今日より前になっていることは無いが、念のため今日を保持
-  render();
-  closeModal();
+/* ---- GitHub トークンの保存/読み込み ---- */
+function loadToken() {
+  try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+}
+function saveToken(tok) {
+  try { localStorage.setItem(TOKEN_KEY, tok); } catch (e) { /* 続行 */ }
+}
+
+/** 保存ステータス表示（type: "ok" | "err" | "info" | null） */
+function setSaveStatus(msg, type) {
+  const el2 = document.getElementById("save-status");
+  el2.textContent = msg || "";
+  el2.hidden = !msg;
+  el2.className = "save-status" + (type ? " is-" + type : "");
+}
+
+/**
+ * UTF-8 文字列を Base64 に変換（日本語対応）。
+ * btoa は Latin-1 しか扱えないため、一度 UTF-8 バイト列にしてから変換する。
+ */
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+/**
+ * 保存（全体公開）：GitHub Contents API で rotation-data.js を直接コミット。
+ *  1) GET で現在ファイルの sha 取得
+ *  2) 新しい中身を生成して UTF-8 Base64 エンコード
+ *  3) PUT でコミット
+ * 成功後、localStorage にも保存して即座に画面へ反映する。
+ */
+async function onSave() {
+  syncDraftBase();
+  const newConfig = draftToConfig(draft);
+  const token = document.getElementById("in-token").value.trim();
+
+  if (!token) {
+    setSaveStatus("GitHub トークンを入力してください（下の「GitHub トークン」欄）。", "err");
+    return;
+  }
+  saveToken(token);
+
+  const { owner, repo, branch, path } = GITHUB_CONFIG;
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+
+  const btn = document.getElementById("btn-save");
+  btn.disabled = true;
+  setSaveStatus("保存中… GitHub にコミットしています。", "info");
+
+  try {
+    // 1) 現在の sha を取得
+    let sha = undefined;
+    const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(branch)}`, { headers });
+    if (getRes.status === 200) {
+      const data = await getRes.json();
+      sha = data.sha;
+    } else if (getRes.status === 404) {
+      sha = undefined; // ファイルが無ければ新規作成
+    } else if (getRes.status === 401 || getRes.status === 403) {
+      throw new Error("AUTH");
+    } else {
+      throw new Error("GET_" + getRes.status);
+    }
+
+    // 2) 新しい中身を生成 → Base64
+    const fileText = generateFileText(newConfig);
+    const contentB64 = utf8ToBase64(fileText);
+
+    // 3) PUT でコミット
+    const body = {
+      message: "Update rotation settings from web",
+      content: contentB64,
+      branch,
+    };
+    if (sha) body.sha = sha;
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (putRes.status === 200 || putRes.status === 201) {
+      // 即座にローカルへも反映（Pages 再ビルド待ちの間も正しく見えるように）
+      config = newConfig;
+      saveConfig(config);
+      render();
+      setSaveStatus("保存しました。GitHub Pages への反映には1〜2分かかります。", "ok");
+    } else if (putRes.status === 401 || putRes.status === 403) {
+      throw new Error("AUTH");
+    } else if (putRes.status === 409) {
+      throw new Error("CONFLICT");
+    } else {
+      let detail = "";
+      try { detail = (await putRes.json()).message || ""; } catch (e) { /* noop */ }
+      throw new Error("PUT_" + putRes.status + (detail ? "_" + detail : ""));
+    }
+  } catch (err) {
+    const m = String(err.message || err);
+    if (m === "AUTH") {
+      setSaveStatus("トークンが無効か、権限が不足しています（Contents: Read and write が必要）。トークンを確認して再試行してください。", "err");
+    } else if (m === "CONFLICT") {
+      setSaveStatus("ファイルが競合しました（他の更新と衝突）。少し待ってからもう一度保存してください。", "err");
+    } else if (m.startsWith("GET_") || m.startsWith("PUT_")) {
+      setSaveStatus("GitHub への保存に失敗しました（" + m + "）。通信状態やリポジトリ設定を確認して再試行してください。", "err");
+    } else {
+      setSaveStatus("保存に失敗しました：" + m + "。ネットワークを確認して再試行してください。", "err");
+    }
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 /** デフォルトに戻す */
@@ -536,7 +698,7 @@ function onReset() {
 
 /** エクスポート：rotation-data.js 全体のコードを生成して表示 */
 function onExport() {
-  syncDraftTexts();
+  syncDraftBase();
   const cfg = draftToConfig(draft);
   document.getElementById("export-area").value = generateFileText(cfg);
   document.getElementById("export-section").hidden = false;
@@ -572,8 +734,8 @@ function generateFileText(cfg) {
  *  schedule は「マップキー + 継続時間(分)」のみを持ち、名前/画像は MAP_MASTER から引く。
  * ========================================================================== */
 
-const SEASON_LABEL = ${JSON.stringify(cfg.seasonLabel)};
-const SUB_TEXT = ${JSON.stringify(cfg.subText)};
+const SEASON_LABEL = ${JSON.stringify(SEASON_LABEL)};
+const SUB_TEXT = ${JSON.stringify(SUB_TEXT)};
 
 const MAP_MASTER = {
 ${mapLines}
@@ -641,11 +803,22 @@ function init() {
     if (jstMidnightEpoch(cand) <= jstMidnightEpoch(maxStr)) setDate(cand);
   });
 
-  // 設定モーダル
-  document.getElementById("gear-btn").addEventListener("click", openModal);
+  // 設定モーダル（歯車 → パスワード認証 → 設定）
+  document.getElementById("gear-btn").addEventListener("click", onGearClick);
   document.getElementById("modal-close").addEventListener("click", closeModal);
   el.modalOverlay.addEventListener("click", (e) => {
     if (e.target === el.modalOverlay) closeModal();
+  });
+
+  // 認証モーダル
+  document.getElementById("auth-close").addEventListener("click", closeAuth);
+  document.getElementById("auth-submit").addEventListener("click", submitAuth);
+  document.getElementById("auth-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitAuth();
+  });
+  el.authOverlay = document.getElementById("auth-overlay");
+  el.authOverlay.addEventListener("click", (e) => {
+    if (e.target === el.authOverlay) closeAuth();
   });
   document.getElementById("btn-add-rot").addEventListener("click", () => {
     const firstKey = draft.mapList[0] ? draft.mapList[0].key : "";

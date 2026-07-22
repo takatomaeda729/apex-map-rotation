@@ -101,23 +101,11 @@
 
       <div class="modal-body">
         <p class="modal-note">
-          ここでの変更は <b>このブラウザにのみ</b> 保存されます（localStorage）。
-          全閲覧者に反映するには、下の「エクスポート」で出力したコードを
-          <code>rotation-data.js</code> に上書きして GitHub に push してください。
+          「保存（全体公開）」を押すと、GitHub API 経由で <code>rotation-data.js</code> を
+          直接コミットし、<b>全閲覧者</b>に反映します（反映まで1〜2分）。同時にこのブラウザにも
+          保存され、再ビルド待ちの間も正しく表示されます。<br />
+          ヘッダーの文言（サブテキスト・シーズン表記）はコード側の定数で管理しており、ここでは編集できません。
         </p>
-
-        <!-- ヘッダーテキスト -->
-        <section class="fs">
-          <h3 class="fs-title">ヘッダーの文言</h3>
-          <label class="field">
-            <span>サブテキスト（例: APEX MAP ROTATION）</span>
-            <input type="text" id="in-subtext" />
-          </label>
-          <label class="field">
-            <span>シーズン表記（例: for SEASON30）</span>
-            <input type="text" id="in-season" />
-          </label>
-        </section>
 
         <!-- 基準時刻 -->
         <section class="fs">
@@ -145,6 +133,20 @@
           <button class="btn btn-add" id="btn-add-map">＋ マップを追加</button>
         </section>
 
+        <!-- GitHub トークン（全体公開に使用） -->
+        <section class="fs">
+          <h3 class="fs-title">GitHub トークン（全体公開に必要）</h3>
+          <p class="fs-desc">
+            作り方: GitHub → Settings → Developer settings → Fine-grained tokens →
+            対象リポジトリを選び、<b>Contents</b> を <b>Read and write</b> に設定して発行。<br />
+            入力したトークンはこのブラウザ（localStorage）にのみ保存され、コードには埋め込まれません。
+          </p>
+          <label class="field">
+            <span>Fine-grained Personal Access Token</span>
+            <input type="password" id="in-token" placeholder="github_pat_..." autocomplete="off" />
+          </label>
+        </section>
+
         <!-- エクスポート -->
         <section class="fs" id="export-section" hidden>
           <h3 class="fs-title">エクスポート（rotation-data.js 全体）</h3>
@@ -156,9 +158,31 @@
       </div>
 
       <div class="modal-foot">
-        <button class="btn btn-primary" id="btn-save">保存して反映</button>
+        <button class="btn btn-primary" id="btn-save">保存（全体公開）</button>
         <button class="btn" id="btn-reset">デフォルトに戻す</button>
         <button class="btn" id="btn-export">エクスポート</button>
+        <p class="save-status" id="save-status" hidden></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 認証モーダル（設定を開く前のパスワード） ============ -->
+  <div class="modal-overlay" id="auth-overlay" hidden>
+    <div class="modal auth-modal" role="dialog" aria-modal="true" aria-label="設定の認証">
+      <div class="modal-head">
+        <h2 class="modal-title">🔒 設定の認証</h2>
+        <button class="modal-close" id="auth-close" aria-label="閉じる">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="fs-desc">設定を開くにはパスワードを入力してください。</p>
+        <label class="field">
+          <span>パスワード</span>
+          <input type="password" id="auth-input" autocomplete="off" />
+        </label>
+        <p class="auth-error" id="auth-error" hidden>パスワードが違います。</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-primary" id="auth-submit">認証して開く</button>
       </div>
     </div>
   </div>

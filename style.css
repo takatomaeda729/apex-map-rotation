@@ -697,9 +697,31 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
   padding: 16px 20px;
   border-top: 1px solid var(--border);
 }
+
+/* 保存ステータス（成功/エラー/情報） */
+.save-status {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.save-status[hidden] { display: none; }
+.save-status.is-ok   { color: #58d68d; }
+.save-status.is-err  { color: #ff6b81; }
+.save-status.is-info { color: var(--neon-2); }
+
+/* 認証モーダル */
+.auth-modal { max-width: 380px; }
+.auth-error {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: #ff6b81;
+}
+.auth-error[hidden] { display: none; }
 
 /* モーダルのスマホ対応 */
 @media (max-width: 480px) {
