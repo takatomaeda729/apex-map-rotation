@@ -359,6 +359,12 @@ function init() {
     timeline:      document.getElementById("timeline"),
   };
 
+  // ヘッダーのシーズン表記を rotation-data.js の定数から反映
+  const seasonEl = document.getElementById("season-label");
+  if (seasonEl && typeof SEASON_LABEL === "string") {
+    seasonEl.textContent = SEASON_LABEL;
+  }
+
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.addEventListener("click", () => setMode(tab.dataset.mode));
   });

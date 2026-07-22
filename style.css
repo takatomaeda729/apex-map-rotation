@@ -34,8 +34,9 @@ body {
 }
 
 /* Orbitron を使う要素 */
-.logo-main, .logo-sub, .map-name-en, .countdown, .now-badge, .next-tag,
-.tl-time, .tl-name, .tl-live, .section-title, .cd-label, .map-range {
+.logo-lupin, .logo-special, .logo-season, .map-name-en, .countdown,
+.now-badge, .next-tag, .tl-time, .tl-name, .tl-live, .section-title,
+.cd-label, .map-range {
   font-family: "Orbitron", "Segoe UI", sans-serif;
 }
 
@@ -66,34 +67,86 @@ body {
   padding: 22px 18px 56px;
 }
 
-/* ---------- ヘッダー ---------- */
+/* ---------- ヘッダー（ゲーミングロゴ風の横長バー） ---------- */
 .site-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 22px;
+  margin-bottom: 26px;
+  padding: 16px 20px;
+  background: #17121a;                       /* ほぼ黒の横長バー */
+  border-radius: 12px;
+  border-bottom: 2px solid rgba(240,66,77,0.35); /* 下端にごく薄い赤ライン */
+  box-shadow: 0 6px 22px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
 }
-.logo { display: flex; flex-direction: column; line-height: 1; }
-.logo-main {
-  font-size: 1.8rem;
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* 斜めに傾いたオレンジ→赤の平行四辺形アクセントバー */
+.accent-bar {
+  flex-shrink: 0;
+  width: 14px;
+  height: 46px;
+  background: linear-gradient(180deg, var(--orange), #f0424d 70%, #d61f2b);
+  transform: skewX(-16deg);
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(240,66,77,0.6), 0 0 4px rgba(245,166,35,0.7);
+}
+
+.brand-text { display: flex; flex-direction: column; line-height: 1; min-width: 0; }
+
+.logo-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* LUPIN = 白 */
+.logo-lupin {
+  font-size: 1.9rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   color: #fff;
-  /* ネオン発光 */
-  text-shadow:
-    0 0 6px rgba(209,107,255,0.9),
-    0 0 16px rgba(176,38,255,0.8),
-    0 0 34px rgba(176,38,255,0.6);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
 }
-.logo-sub {
-  margin-top: 6px;
-  font-size: 0.66rem;
+/* SPECIAL = 赤 + うっすら赤ネオン */
+.logo-special {
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #f0424d;
+  text-shadow:
+    0 0 6px rgba(240,66,77,0.7),
+    0 0 16px rgba(240,66,77,0.55),
+    0 0 30px rgba(214,31,43,0.4);
+}
+/* for SEASON30 = オレンジ〜黄の角ばった表記 */
+.logo-season {
+  font-size: 0.9rem;
   font-weight: 700;
-  letter-spacing: 0.42em;
-  color: var(--neon-2);
-  opacity: 0.85;
+  letter-spacing: 0.14em;
+  color: var(--orange);
+  text-shadow: 0 0 10px rgba(245,166,35,0.5);
+  transform: skewX(-8deg);          /* 角ばった雰囲気に少し傾け */
+  align-self: center;
+}
+/* 日本語はロゴ下に小さく */
+.logo-jp {
+  margin-top: 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  color: var(--text-dim);
 }
 
 /* ---------- タブ ---------- */
@@ -386,9 +439,11 @@ body {
 
 @media (max-width: 420px) {
   .wrap { padding: 16px 12px 44px; }
-  .site-header { gap: 12px; }
-  .logo-main { font-size: 1.5rem; }
-  .tabs { width: 100%; }
+  .site-header { gap: 12px; padding: 14px 14px; }
+  .logo-lupin, .logo-special { font-size: 1.5rem; }
+  .logo-season { font-size: 0.78rem; }
+  .accent-bar { height: 40px; width: 12px; }
+  .tabs { width: 100%; }         /* スマホではタブを折り返して全幅 */
   .tab { flex: 1; padding: 9px 4px; }
 
   .main-info { padding: 20px 18px; }
