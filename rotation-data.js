@@ -1,9 +1,15 @@
 /* ============================================================================
- *  rotation-data.js — Apex Legends マップローテーション定義（ルピンスペシャル）
+ *  rotation-data.js — ルピンスペシャル / マップローテーション定義
  * ============================================================================
  *
  *  ★ このファイルだけを編集すればシーズン更新に対応できます。★
  *  （index.html / script.js / style.css は触らなくてOK）
+ *
+ *  ※ サイト上の「設定」パネル（ヘッダー右の歯車）からも編集できます。
+ *     そちらで編集した内容はブラウザの localStorage に保存され、そのブラウザ
+ *     でのみ反映されます。全閲覧者に反映したい場合は、設定パネルの
+ *     「エクスポート」で出力されるコードを、この rotation-data.js に上書きして
+ *     GitHub に push してください。
  *
  * ----------------------------------------------------------------------------
  *  ■ シーズン更新時の編集手順
@@ -12,89 +18,63 @@
  *  1) baseTime（基準時刻）の求め方
  *  ---------------------------------
  *  baseTime は「schedule の 1 番目のマップが切り替わった瞬間」の
- *  UNIX時間（秒, UTC）です。ゲーム内やローテ情報サイトで
- *  「あるマップに切り替わった時刻」を1つ確認し、それを秒に変換します。
+ *  UNIX時間（秒, UTC）です。
  *
  *   ・JST の日時 → UNIX秒 への変換例（ブラウザの開発者ツールのコンソールで）:
- *
- *       // 例: JST 2026/07/22 12:30 に storm_point が開始した場合
- *       // JST は UTC+9 なので、UTC では 2026/07/22 03:30
+ *       // 例: JST 2026/07/22 12:30 に開始 → UTC 2026/07/22 03:30
  *       Math.floor(Date.UTC(2026, 6, 22, 3, 30, 0) / 1000)
  *       //   ↑月は 0 始まり（7月 = 6）。結果 = 1784691000
- *
- *   ・求めた数値を、その schedule の「先頭マップの開始時刻」として
- *     baseTime に入れてください。
- *   ・baseTime は schedule の «先頭要素» の開始時刻である必要があります。
- *     先頭マップを入れ替えたときは baseTime も対応する時刻に直してください。
  *   ・過去・未来どちらの時刻でも計算は正しく動きます（負の剰余対応済み）。
  *
  *  2) schedule（ローテーション配列）の書き換え方
  *  ---------------------------------------------
- *   ・順番どおりにマップを並べます。ローテはこの配列を無限に繰り返します。
- *   ・各要素:
- *       key         … 内部キー（英語, 半角英数と _ ）。色/英語名の識別に使用。
- *       map         … 画面に表示する日本語名。
- *       image       … マップ画像のパス（例 "images/storm_point.jpg"）。
- *                      null / 省略 すると色のグラデーションプレースホルダー。
- *       durationMin … そのマップが継続する «分» 数。
+ *   ・schedule は «マップキー(key) + 継続時間(durationMin)» だけを持ちます。
+ *     マップ名や画像は下の MAP_MASTER から key で引かれます。
+ *   ・key は MAP_MASTER に存在するものを指定してください。
+ *   ・durationMin が実測とズレていたらその数値だけ直せばOKです。
  *
- *   ・durationMin が実測とズレていたらここの数値だけ直せばOKです。
- *     （全マップ同じ長さである必要はありません。個別に設定できます）
- *
- *  3) 英語表記・色の追加/変更
- *  --------------------------
- *   ・下の MAP_META に key を追加すると、英語名(en)・プレースホルダー色を
- *     設定できます。MAP_META に無い key でも動きますが、英語名は日本語名の
- *     まま、色はキーから自動生成された既定色になります。
+ *  3) 新しいマップを追加したいとき
+ *  --------------------------------
+ *   ・MAP_MASTER に «キー: { nameJa, nameEn, image }» を追加すれば、
+ *     schedule からその key を使えるようになります。
  * ========================================================================== */
 
 
 /* ----------------------------------------------------------------------------
- *  ヘッダーのシーズン表記
- *   ロゴ右に表示される「for SEASON30」の文言。シーズンが変わったら
- *   ここの数字（や文言）を書き換えるだけでヘッダー表示が変わります。
+ *  ヘッダーのテキスト
+ *   seasonLabel … ロゴ右の「for SEASON30」の文言
+ *   subText     … サブテキスト（「APEX MAP ROTATION」相当）
  * -------------------------------------------------------------------------- */
 const SEASON_LABEL = "for SEASON30";
+const SUB_TEXT = "APEX MAP ROTATION";
 
 
 /* ----------------------------------------------------------------------------
- *  マップごとのメタ情報（英語名・プレースホルダー色）
- *   key をそろえておけば、schedule 側は key だけ書けばOK。
+ *  マップマスタ（全マップの定義）
+ *   key: { nameJa: 日本語名, nameEn: 英語名, image: 画像パス }
  * -------------------------------------------------------------------------- */
-const MAP_META = {
-  storm_point: { en: "Storm Point",  colors: ["#1b5e5a", "#0a2e33"] },
-  worlds_edge: { en: "World's Edge", colors: ["#b23a2e", "#3a1512"] },
-  e_district:  { en: "E-District",   colors: ["#5a3fa0", "#1a1030"] },
-  kings_canyon:{ en: "King's Canyon", colors: ["#c08a2d", "#2e1f08"] },
-  olympus:     { en: "Olympus",      colors: ["#2d7fc0", "#0a1f33"] },
-  broken_moon: { en: "Broken Moon",  colors: ["#3f8f8f", "#08201f"] },
+const MAP_MASTER = {
+  storm_point:  { nameJa: "ストームポイント",   nameEn: "Storm Point",   image: "images/storm_point.jpg" },
+  worlds_edge:  { nameJa: "ワールズエッジ",     nameEn: "World's Edge",  image: "images/worlds_edge.png" },
+  e_district:   { nameJa: "Eディストリクト",    nameEn: "E-District",    image: "images/e_district.jpg" },
+  olympus:      { nameJa: "オリンパス",         nameEn: "Olympus",       image: "images/olympus.jpg" },
+  kings_canyon: { nameJa: "キングスキャニオン", nameEn: "Kings Canyon",  image: "images/kings_canyon.jpg" },
+  broken_moon:  { nameJa: "ブロークンムーン",   nameEn: "Broken Moon",   image: "images/broken_moon.jpg" },
 };
 
 
 /* ----------------------------------------------------------------------------
- *  ローテーション定義本体
- *   ここを編集してシーズン更新に対応します（上の編集手順を参照）。
+ *  ローテーション定義（1本のみ）
+ *   label   … 表示用ラベル
+ *   baseTime… 先頭マップが開始した UNIX秒(UTC)
+ *   schedule… [{ key, durationMin }] を順番に無限ループ
  * -------------------------------------------------------------------------- */
-const ROTATIONS = {
-  battle_royale: {
-    label: "カジュアル",
-    // JST 2026/07/22 12:30 にストームポイントが開始 = UTC 2026/07/22 03:30
-    baseTime: 1784691000, // UNIX時間(秒)
-    schedule: [
-      { key: "storm_point", map: "ストームポイント", image: "images/storm_point.jpg", durationMin: 270 },
-      { key: "worlds_edge", map: "ワールズエッジ",   image: "images/worlds_edge.png", durationMin: 270 },
-      { key: "e_district",  map: "Eディストリクト",  image: "images/e_district.jpg",  durationMin: 270 },
-    ],
-  },
-  ranked: {
-    label: "ランク",
-    // ランクのローテは未確定。仮でカジュアルと同じ構成を入れておき、
-    // このファイルを編集するだけで差し替えられるようにしてある。
-    baseTime: 1784691000,
-    schedule: [
-      { key: "storm_point", map: "ストームポイント", image: "images/storm_point.jpg", durationMin: 270 },
-      { key: "worlds_edge", map: "ワールズエッジ",   image: "images/worlds_edge.png", durationMin: 270 },
-      { key: "e_district",  map: "Eディストリクト",  image: "images/e_district.jpg",  durationMin: 270 },
-    ],
-  },
+const ROTATION = {
+  label: "ランク",
+  baseTime: 1784691000, // JST 2026/07/22 12:30 にストームポイント開始 = UTC 03:30
+  schedule: [
+    { key: "storm_point", durationMin: 270 },
+    { key: "worlds_edge", durationMin: 270 },
+    { key: "e_district",  durationMin: 270 },
+  ],
 };

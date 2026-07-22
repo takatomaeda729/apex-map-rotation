@@ -33,15 +33,16 @@
             <span class="logo-special">SPECIAL</span>
             <span class="logo-season" id="season-label">for SEASON30</span>
           </div>
-          <span class="logo-jp">ルピンスペシャル</span>
+          <span class="logo-sub" id="sub-text">APEX MAP ROTATION</span>
         </div>
       </div>
 
-      <!-- モード切替タブ -->
-      <div class="tabs" role="tablist" aria-label="モード切替">
-        <button class="tab" role="tab" data-mode="battle_royale" aria-selected="false">カジュアル</button>
-        <button class="tab" role="tab" data-mode="ranked" aria-selected="false">ランク</button>
-      </div>
+      <!-- 設定（歯車） -->
+      <button class="gear-btn" id="gear-btn" aria-label="設定を開く" title="設定">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path fill="currentColor" d="M19.14 12.94a7.5 7.5 0 0 0 .05-.94 7.5 7.5 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.8a.5.5 0 0 0 .12.64l2.03 1.58c-.03.31-.05.62-.05.94s.02.63.05.94L2.82 14.5a.5.5 0 0 0-.12.64l1.92 3.32c.14.24.42.32.66.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.12-.56 1.62-.94l2.39.96c.24.1.52.02.66-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7Z"/>
+        </svg>
+      </button>
     </header>
 
     <!-- メインカード（現在のマップ） -->
@@ -69,16 +70,97 @@
       </div>
     </section>
 
-    <!-- タイムライン（今後48時間） -->
-    <section class="timeline-section" aria-label="今後の予定">
+    <!-- タイムライン（日付選択 → その日のローテ） -->
+    <section class="timeline-section" aria-label="ローテーション予定">
       <h3 class="section-title">UPCOMING</h3>
-      <div class="timeline-groups" id="timeline"></div>
+
+      <!-- 日付セレクター（JSで7日分のチップを生成） -->
+      <div class="date-bar">
+        <button class="date-arrow" id="date-prev" aria-label="前の日">‹</button>
+        <div class="date-chips" id="date-chips"></div>
+        <button class="date-arrow" id="date-next" aria-label="次の日">›</button>
+      </div>
+
+      <p class="day-heading" id="day-heading">—</p>
+      <div class="tl-row" id="timeline"></div>
     </section>
 
     <footer class="site-footer">
-      <p>ローテ定義は <code>rotation-data.js</code> を編集して更新できます。</p>
+      <p>ローテ定義は <code>rotation-data.js</code> または右上の歯車から編集できます。</p>
     </footer>
 
+  </div>
+
+  <!-- ============ 設定モーダル ============ -->
+  <div class="modal-overlay" id="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="設定">
+      <div class="modal-head">
+        <h2 class="modal-title">⚙ 設定</h2>
+        <button class="modal-close" id="modal-close" aria-label="閉じる">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-note">
+          ここでの変更は <b>このブラウザにのみ</b> 保存されます（localStorage）。
+          全閲覧者に反映するには、下の「エクスポート」で出力したコードを
+          <code>rotation-data.js</code> に上書きして GitHub に push してください。
+        </p>
+
+        <!-- ヘッダーテキスト -->
+        <section class="fs">
+          <h3 class="fs-title">ヘッダーの文言</h3>
+          <label class="field">
+            <span>サブテキスト（例: APEX MAP ROTATION）</span>
+            <input type="text" id="in-subtext" />
+          </label>
+          <label class="field">
+            <span>シーズン表記（例: for SEASON30）</span>
+            <input type="text" id="in-season" />
+          </label>
+        </section>
+
+        <!-- 基準時刻 -->
+        <section class="fs">
+          <h3 class="fs-title">基準時刻（baseTime）</h3>
+          <p class="fs-desc">この日時（JST）に、下のローテーション表の <b>1番目のマップが開始</b> します。</p>
+          <label class="field">
+            <span>基準日時（JST）</span>
+            <input type="datetime-local" id="in-basetime" />
+          </label>
+        </section>
+
+        <!-- ローテーション表 -->
+        <section class="fs">
+          <h3 class="fs-title">ローテーション</h3>
+          <p class="fs-desc">マップを選び、継続時間（分）を入力します。↑↓で並べ替え。</p>
+          <div class="rows" id="rot-rows"></div>
+          <button class="btn btn-add" id="btn-add-rot">＋ 行を追加</button>
+        </section>
+
+        <!-- マップマスタ -->
+        <section class="fs">
+          <h3 class="fs-title">マップマスタ</h3>
+          <p class="fs-desc">キー（半角英数）/ 日本語名 / 英語名 / 画像パス。新マップの追加や編集ができます。</p>
+          <div class="rows" id="map-rows"></div>
+          <button class="btn btn-add" id="btn-add-map">＋ マップを追加</button>
+        </section>
+
+        <!-- エクスポート -->
+        <section class="fs" id="export-section" hidden>
+          <h3 class="fs-title">エクスポート（rotation-data.js 全体）</h3>
+          <p class="fs-desc">このコードを <code>rotation-data.js</code> に上書きして push すると全閲覧者に反映されます。</p>
+          <textarea id="export-area" class="export-area" readonly></textarea>
+          <button class="btn" id="btn-copy">コピー</button>
+          <span class="copy-msg" id="copy-msg" hidden>コピーしました</span>
+        </section>
+      </div>
+
+      <div class="modal-foot">
+        <button class="btn btn-primary" id="btn-save">保存して反映</button>
+        <button class="btn" id="btn-reset">デフォルトに戻す</button>
+        <button class="btn" id="btn-export">エクスポート</button>
+      </div>
+    </div>
   </div>
 
   <!-- データ定義を先に読み込む -->
