@@ -73,7 +73,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;               /* 歯車を折り返さず常に右端に保持 */
   margin-bottom: 26px;
   padding: 16px 20px;
   background: #17121a;                       /* ほぼ黒の横長バー */
@@ -88,6 +88,7 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1 1 auto;   /* ロゴブロックが伸縮し、歯車ぶんの余白を確保 */
   min-width: 0;
 }
 
