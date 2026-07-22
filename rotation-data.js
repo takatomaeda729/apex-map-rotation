@@ -22,7 +22,7 @@ const IMAGE_LIST = [
 
 const MAP_MASTER = {
   storm_point: { nameJa: "ストームポイント", nameEn: "Storm Point", image: "images/e_district2.jpg" },
-  worlds_edge: { nameJa: "ワールズエッジ", nameEn: "World's Edge", image: "images/e_district2.jpg" },
+  worlds_edge: { nameJa: "ワールズエッジ", nameEn: "World's Edge", image: "images/worlds_edge.png" },
   e_district: { nameJa: "Eディストリクト", nameEn: "E-District", image: "images/e_district2.jpg" },
   olympus: { nameJa: "オリンパス", nameEn: "Olympus", image: "images/olympus.jpg" },
   kings_canyon: { nameJa: "キングスキャニオン", nameEn: "Kings Canyon", image: "images/kings_canyon.jpg" },
