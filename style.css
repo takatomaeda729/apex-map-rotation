@@ -629,7 +629,20 @@ body {
 .row-rot select { flex: 1; min-width: 120px; }
 .num-wrap { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: var(--text-dim); }
 .num { width: 76px; }
-.row-map input { flex: 1; min-width: 90px; }
+
+/* マップマスタ行：マップ名 + 画像プルダウン + プレビュー */
+.row-map .map-name-input { flex: 1 1 130px; min-width: 100px; }
+.row-map select { flex: 1 1 150px; min-width: 120px; }
+.map-thumb {
+  flex-shrink: 0;
+  width: 46px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--panel-2);
+}
 
 .row-ops { display: inline-flex; gap: 4px; margin-left: auto; }
 .mini-btn {

@@ -114,6 +114,7 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
  *  ※ヘッダー文言(SUB_TEXT/SEASON_LABEL)はコード定数のみで管理し、設定には含めない */
 function defaultConfig() {
   return {
+    imageList: clone(IMAGE_LIST),
     mapMaster: clone(MAP_MASTER),
     rotation: {
       label: ROTATION.label,
@@ -142,6 +143,7 @@ function loadConfig() {
         // デフォルトに無いフィールドを補完
         const def = defaultConfig();
         return {
+          imageList: Array.isArray(parsed.imageList) ? parsed.imageList : def.imageList,
           mapMaster: parsed.mapMaster,
           rotation: {
             label: parsed.rotation.label ?? def.rotation.label,
@@ -374,20 +376,28 @@ function configToDraft(c) {
     baseTime: c.rotation.baseTime,
     label: c.rotation.label,
     schedule: clone(c.rotation.schedule),
+    imageList: clone(c.imageList || IMAGE_LIST),
     mapList: Object.entries(c.mapMaster).map(([key, v]) => ({
       key, nameJa: v.nameJa, nameEn: v.nameEn, image: v.image,
     })),
   };
 }
 
-/** draft → config */
+/** draft → config
+ *  ※英語名(nameEn)の入力欄は廃止したため、既存値を保持し、
+ *    無い場合（新規追加）は日本語名をそのまま英語名に流用する。 */
 function draftToConfig(d) {
   const mapMaster = {};
   d.mapList.forEach((m) => {
     if (!m.key) return;
-    mapMaster[m.key] = { nameJa: m.nameJa, nameEn: m.nameEn, image: m.image };
+    mapMaster[m.key] = {
+      nameJa: m.nameJa,
+      nameEn: m.nameEn || m.nameJa,
+      image: m.image,
+    };
   });
   return {
+    imageList: clone(d.imageList || IMAGE_LIST),
     mapMaster,
     rotation: {
       label: d.label,
@@ -463,12 +473,12 @@ function renderRotRows() {
     const r = document.createElement("div");
     r.className = "row row-rot";
 
-    // マップ選択（プルダウン）
+    // マップ選択（プルダウン。キーは内部管理なので表示は日本語名）
     const sel = document.createElement("select");
     draft.mapList.forEach((m) => {
       const opt = document.createElement("option");
       opt.value = m.key;
-      opt.textContent = `${m.nameJa}（${m.key}）`;
+      opt.textContent = m.nameJa || m.key;
       sel.appendChild(opt);
     });
     // 現在の key がマスタに無い場合のフォールバック
@@ -510,7 +520,7 @@ function renderRotRows() {
   wrap.replaceChildren(frag);
 }
 
-/** マップマスタ行を描画 */
+/** マップマスタ行を描画（マップ名 + 画像プルダウン + プレビューのみ） */
 function renderMapRows() {
   const wrap = document.getElementById("map-rows");
   const frag = document.createDocumentFragment();
@@ -519,23 +529,51 @@ function renderMapRows() {
     const r = document.createElement("div");
     r.className = "row row-map";
 
-    const key = mkInput(m.key, "キー", (v) => { m.key = v.trim(); });
-    const ja = mkInput(m.nameJa, "日本語名", (v) => { m.nameJa = v; });
-    const en = mkInput(m.nameEn, "英語名", (v) => { m.nameEn = v; });
-    const img = mkInput(m.image, "画像パス", (v) => { m.image = v; });
-    // key を変えたら選択肢も更新
-    key.addEventListener("change", () => renderRotRows());
+    // マップ名（日本語）
+    const ja = mkInput(m.nameJa, "マップ名", (v) => { m.nameJa = v; });
+    ja.classList.add("map-name-input");
+    // 名前を確定したらローテのプルダウン表示も更新
+    ja.addEventListener("change", () => renderRotRows());
 
+    // 画像プルダウン（IMAGE_LIST から選択）
+    const sel = document.createElement("select");
+    const opts = draft.imageList.slice();
+    if (m.image && !opts.includes(m.image)) opts.unshift(m.image); // 一覧外の既存値も残す
+    opts.forEach((img) => {
+      const o = document.createElement("option");
+      o.value = img;
+      o.textContent = img.replace(/^images\//, ""); // ファイル名だけ表示
+      sel.appendChild(o);
+    });
+    sel.value = m.image || (draft.imageList[0] || "");
+    m.image = sel.value; // 未設定なら先頭で確定
+
+    // プレビューサムネイル
+    const thumb = document.createElement("span");
+    thumb.className = "map-thumb";
+    const setThumb = (src) => { thumb.style.backgroundImage = src ? `url("${src}")` : "none"; };
+    setThumb(sel.value);
+    sel.addEventListener("change", () => { m.image = sel.value; setThumb(sel.value); });
+
+    // 削除
     const del = mkBtn("×", "削除", () => { draft.mapList.splice(i, 1); renderMapRows(); renderRotRows(); }, "btn-del");
     const ops = document.createElement("span");
     ops.className = "row-ops";
     ops.append(del);
 
-    r.append(key, ja, en, img, ops);
+    r.append(ja, sel, thumb, ops);
     frag.appendChild(r);
   });
 
   wrap.replaceChildren(frag);
+}
+
+/** 新規マップ用のキーを自動生成（map_1, map_2, ...） */
+function genMapKey() {
+  const existing = new Set(draft.mapList.map((m) => m.key));
+  let n = 1;
+  while (existing.has("map_" + n)) n++;
+  return "map_" + n;
 }
 
 /* 小さなヘルパー */
@@ -713,6 +751,9 @@ function jsKey(k) {
 
 /** config → rotation-data.js 全体のテキスト */
 function generateFileText(cfg) {
+  const imgList = cfg.imageList || IMAGE_LIST;
+  const imgLines = imgList.map((s) => `  ${JSON.stringify(s)},`).join("\n");
+
   const mapLines = Object.entries(cfg.mapMaster).map(([k, v]) =>
     `  ${jsKey(k)}: { nameJa: ${JSON.stringify(v.nameJa)}, nameEn: ${JSON.stringify(v.nameEn)}, image: ${JSON.stringify(v.image)} },`
   ).join("\n");
@@ -736,6 +777,10 @@ function generateFileText(cfg) {
 
 const SEASON_LABEL = ${JSON.stringify(SEASON_LABEL)};
 const SUB_TEXT = ${JSON.stringify(SUB_TEXT)};
+
+const IMAGE_LIST = [
+${imgLines}
+];
 
 const MAP_MASTER = {
 ${mapLines}
@@ -826,7 +871,13 @@ function init() {
     renderRotRows();
   });
   document.getElementById("btn-add-map").addEventListener("click", () => {
-    draft.mapList.push({ key: "", nameJa: "", nameEn: "", image: "" });
+    // キーは内部で自動生成。画像は一覧の先頭を初期選択。
+    draft.mapList.push({
+      key: genMapKey(),
+      nameJa: "",
+      nameEn: "",
+      image: draft.imageList[0] || "",
+    });
     renderMapRows();
   });
   document.getElementById("btn-save").addEventListener("click", onSave);
