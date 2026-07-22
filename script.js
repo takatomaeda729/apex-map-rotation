@@ -1,5 +1,5 @@
 /* ============================================================================
- *  script.js — Apex マップローテーション 計算 & 表示ロジック（ランク専用）
+ *  script.js — ルピンスペシャル / Apex マップローテーション ロジック
  * ----------------------------------------------------------------------------
  *  時刻はすべて UTC(epoch 秒) で計算し、表示のみ JST(Asia/Tokyo) に変換する。
  *  閲覧者の端末のタイムゾーン設定に依存せず、常に JST で表示する。
@@ -10,13 +10,12 @@
 /* ----------------------------------------------------------------------------
  *  定数・状態
  * -------------------------------------------------------------------------- */
-const MODE = "ranked";              // ランク専用（rotation-data.js の ROTATIONS.ranked）
-const SITE_TITLE = "Apexマップローテ"; // ページタイトルのベース
+const STORAGE_KEY = "lupin-rotation-mode"; // タブ選択状態の保存キー
+const TIMELINE_HOURS = 48;                 // タイムライン表示時間（時間）
+const SITE_TITLE = "ルピンスペシャル";       // ページタイトルのベース
 
-// 日付指定タイムラインで表示中の日付（JST の "YYYY-MM-DD"）
-let selectedDateStr = null;
-// カウントダウン用タイマー ID
-let tickTimer = null;
+let currentMode = "battle_royale"; // "battle_royale" | "ranked"
+let tickTimer = null;              // カウントダウン用タイマー ID
 
 
 /* ============================================================================
@@ -56,42 +55,27 @@ function toJst(epochSec) {
 
 const DOW_JP = ["日", "月", "火", "水", "木", "金", "土"];
 
-/** UNIX 秒 → "HH:MM"(JST) の文字列 */
+/** 2桁ゼロ埋め */
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+/** UNIX 秒 → "HH:MM"(JST) */
 function fmtJstHm(epochSec) {
   const t = toJst(epochSec);
   return `${pad2(t.hour)}:${pad2(t.min)}`;
 }
 
-/** UNIX 秒 → "M/D(曜) HH:MM"(JST) の文字列 */
-function fmtJstFull(epochSec) {
-  const t = toJst(epochSec);
-  return `${t.month}/${t.day}(${DOW_JP[t.dow]}) ${pad2(t.hour)}:${pad2(t.min)}`;
-}
-
-/** UNIX 秒 → JST の日付文字列 "YYYY-MM-DD"（date input 用） */
-function jstDateStr(epochSec) {
+/** UNIX 秒 → JST の "YYYY-MM-DD"（日付グループのキー用） */
+function jstDateKey(epochSec) {
   const t = toJst(epochSec);
   return `${t.year}-${pad2(t.month)}-${pad2(t.day)}`;
 }
 
-/**
- * JST の "YYYY-MM-DD" → その日の JST 00:00 の UNIX 秒(UTC)。
- *   JST 00:00 = 前日の UTC 15:00 なので、UTC 換算から 9 時間引く。
- */
-function jstMidnightEpoch(dateStr) {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return Math.floor(Date.UTC(y, m - 1, d, 0, 0, 0) / 1000) - 9 * 3600;
-}
-
-/** "YYYY-MM-DD" を days 日ずらした "YYYY-MM-DD" を返す */
-function shiftDateStr(dateStr, days) {
-  // 正午基準でずらして夏時間等の影響を避ける（JST は影響なしだが安全側）
-  return jstDateStr(jstMidnightEpoch(dateStr) + 12 * 3600 + days * 86400);
-}
-
-/** 2桁ゼロ埋め */
-function pad2(n) {
-  return String(n).padStart(2, "0");
+/** UNIX 秒 → 見出し用 "M/D (曜)"(JST) */
+function fmtJstDateHead(epochSec) {
+  const t = toJst(epochSec);
+  return `${t.month}/${t.day} (${DOW_JP[t.dow]})`;
 }
 
 /** 秒数 → "HH:MM:SS" */
@@ -103,7 +87,7 @@ function fmtHms(totalSec) {
   return `${pad2(h)}:${pad2(m)}:${pad2(sec)}`;
 }
 
-/** 残り秒数 → タイトル用のざっくり表記（例: "あと32分" / "あと1時間5分"） */
+/** 残り秒数 → タイトル用のざっくり表記（例: "あと32分"） */
 function fmtRemainRough(totalSec) {
   const s = Math.max(0, Math.floor(totalSec));
   const h = Math.floor(s / 3600);
@@ -116,8 +100,6 @@ function fmtRemainRough(totalSec) {
 
 /* ============================================================================
  *  2. ローテーション計算（汎用）
- * ----------------------------------------------------------------------------
- *  baseTime と schedule から、指定時刻におけるローテ状態を算出する。
  * ========================================================================== */
 
 /** 指定した rotation の schedule 合計時間（秒）を返す */
@@ -160,28 +142,22 @@ function computeRotation(rotation, atSec) {
 }
 
 /**
- * 指定した JST 日付("YYYY-MM-DD")の 1 日分（00:00〜翌00:00）に
- * かかるローテ予定を配列で返す。
+ * atSec 以降の今後 hours 時間分のローテ予定を配列で返す。
  *   [{ item, startSec, endSec }, ...]
- *   ・日をまたいで継続しているマップも先頭に含む。
  */
-function buildDayTimeline(rotation, dateStr) {
-  const dayStart = jstMidnightEpoch(dateStr);
-  const dayEnd = dayStart + 86400;
+function buildTimeline(rotation, atSec, hours) {
+  const horizon = atSec + hours * 3600;
   const list = [];
 
-  // 00:00 時点で進行中のマップから順に積み上げる。
-  let cur = computeRotation(rotation, dayStart);
+  let cur = computeRotation(rotation, atSec);
   let index = cur.index;
   let startSec = cur.startSec;
 
   let guard = 0;
-  while (startSec < dayEnd && guard < 1000) {
+  while (startSec < horizon && guard < 2000) {
     const item = rotation.schedule[index];
     const endSec = startSec + item.durationMin * 60;
-    if (endSec > dayStart) {
-      list.push({ item, startSec, endSec });
-    }
+    list.push({ item, startSec, endSec });
     startSec = endSec;
     index = (index + 1) % rotation.schedule.length;
     guard++;
@@ -193,6 +169,12 @@ function buildDayTimeline(rotation, dateStr) {
 /* ============================================================================
  *  3. 表示ヘルパー
  * ========================================================================== */
+
+/** マップの英語名を返す（MAP_META に無ければ日本語名で代替） */
+function mapEn(item) {
+  const meta = MAP_META[item.key];
+  return (meta && meta.en) || item.map;
+}
 
 /** マップのプレースホルダー背景（CSS linear-gradient 文字列）を返す */
 function mapGradient(key) {
@@ -209,15 +191,12 @@ function mapGradient(key) {
 }
 
 /** マップのビジュアル（画像 or グラデーション）を DOM 要素に適用 */
-function applyMapVisual(el, key) {
-  const meta = MAP_META[key];
-  if (meta && meta.image) {
-    el.style.backgroundImage = `url("${meta.image}")`;
-    el.style.backgroundSize = "cover";
-    el.style.backgroundPosition = "center";
+function applyMapVisual(el, item) {
+  if (item.image) {
+    el.style.backgroundImage = `url("${item.image}")`;
     el.classList.remove("is-placeholder");
   } else {
-    el.style.backgroundImage = mapGradient(key);
+    el.style.backgroundImage = mapGradient(item.key);
     el.classList.add("is-placeholder");
   }
 }
@@ -229,85 +208,121 @@ function applyMapVisual(el, key) {
 
 let el = {}; // DOM 参照（init で設定）
 
-/** 現在マップ・次マップカードを更新（常に現在時刻ベース） */
-function renderCurrent() {
-  const rotation = ROTATIONS[MODE];
+/** モード切替やロード時に呼ぶ：カード全体を再構築 */
+function render() {
+  const rotation = ROTATIONS[currentMode];
   const state = computeRotation(rotation, nowSec());
 
-  el.currentName.textContent = state.item.map;
-  applyMapVisual(el.currentVisual, state.item.key);
+  // --- 背景（現在マップ画像をうっすら） ---
+  if (state.item.image) {
+    el.bgLayer.style.backgroundImage = `url("${state.item.image}")`;
+  } else {
+    el.bgLayer.style.backgroundImage = mapGradient(state.item.key);
+  }
 
-  el.nextName.textContent = state.nextItem.map;
-  el.nextStart.textContent = fmtJstFull(state.endSec);
-  applyMapVisual(el.nextVisual, state.nextItem.key);
+  // --- 現在のマップ ---
+  applyMapVisual(el.currentVisual, state.item);
+  el.currentNameEn.textContent = mapEn(state.item);
+  el.currentNameJp.textContent = state.item.map;
+  el.currentRange.textContent = `${fmtJstHm(state.startSec)} 〜 ${fmtJstHm(state.endSec)} (JST)`;
+
+  // --- 次のマップ ---
+  el.nextNameEn.textContent = mapEn(state.nextItem);
+
+  // --- タイムライン ---
+  renderTimeline(rotation);
+
+  // --- タブの見た目 ---
+  document.querySelectorAll(".tab").forEach((tab) => {
+    const active = tab.dataset.mode === currentMode;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", active ? "true" : "false");
+  });
+
+  // 秒更新パートも即時反映
+  tick();
 }
 
-/** 選択中の日付のローテを描画 */
-function renderDay() {
-  const rotation = ROTATIONS[MODE];
-  const items = buildDayTimeline(rotation, selectedDateStr);
+/** 今後48時間のタイムラインを日付ごとにグループ化して描画 */
+function renderTimeline(rotation) {
   const now = nowSec();
+  const items = buildTimeline(rotation, now, TIMELINE_HOURS);
 
-  // 見出し（例:「7/22(火) のローテーション」）
-  const head = toJst(jstMidnightEpoch(selectedDateStr) + 12 * 3600); // 正午で曜日判定
-  el.dayHeading.textContent = `${head.month}/${head.day}(${DOW_JP[head.dow]}) のローテーション`;
+  // 日付キーごとにグループ化（挿入順を保持）
+  const groups = new Map();
+  items.forEach((entry) => {
+    const key = jstDateKey(entry.startSec);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
+  });
 
   const frag = document.createDocumentFragment();
-  items.forEach((entry) => {
-    const isNow = entry.startSec <= now && now < entry.endSec; // 現在進行中か
 
+  groups.forEach((entries) => {
+    // 日付見出し
+    const head = document.createElement("p");
+    head.className = "date-head";
+    head.textContent = fmtJstDateHead(entries[0].startSec);
+    frag.appendChild(head);
+
+    // その日のカード群（横並び・折り返し）
     const row = document.createElement("div");
-    row.className = "timeline-row";
-    if (isNow) row.classList.add("is-now");
+    row.className = "tl-row";
 
-    const swatch = document.createElement("span");
-    swatch.className = "timeline-swatch";
-    swatch.style.backgroundImage = mapGradient(entry.item.key);
+    entries.forEach((entry) => {
+      const isNow = entry.startSec <= now && now < entry.endSec;
 
-    const time = document.createElement("span");
-    time.className = "timeline-time";
-    // 開始〜終了(JST)。日をまたぐ表示も HH:MM で表す。
-    time.textContent = `${fmtJstHm(entry.startSec)}〜${fmtJstHm(entry.endSec)}`;
+      const card = document.createElement("div");
+      card.className = "tl-card" + (isNow ? " is-now" : "");
 
-    const name = document.createElement("span");
-    name.className = "timeline-name";
-    name.textContent = entry.item.map;
+      // サムネイル背景
+      if (entry.item.image) {
+        card.style.backgroundImage = `url("${entry.item.image}")`;
+      } else {
+        card.style.backgroundImage = mapGradient(entry.item.key);
+      }
 
-    const badge = document.createElement("span");
-    badge.className = "timeline-badge";
-    if (isNow) badge.textContent = "現在";
+      const overlay = document.createElement("div");
+      overlay.className = "tl-overlay";
 
-    row.append(swatch, time, name, badge);
+      if (isNow) {
+        const live = document.createElement("span");
+        live.className = "tl-live";
+        live.innerHTML = '<span class="dot"></span>LIVE';
+        overlay.appendChild(live);
+      }
+
+      const time = document.createElement("span");
+      time.className = "tl-time";
+      time.textContent = `${fmtJstHm(entry.startSec)} 〜 ${fmtJstHm(entry.endSec)}`;
+
+      const name = document.createElement("span");
+      name.className = "tl-name";
+      name.textContent = mapEn(entry.item);
+
+      overlay.append(time, name);
+      card.appendChild(overlay);
+      row.appendChild(card);
+    });
+
     frag.appendChild(row);
   });
 
   el.timeline.replaceChildren(frag);
 }
 
-/** 全体を描画し直す */
-function render() {
-  renderCurrent();
-  renderDay();
-  tick(); // 秒更新パートも即時反映
-}
-
-/** 1秒ごと：カウントダウン・進行度・タイトルを更新 */
+/** 1秒ごと：カウントダウン・タイトルを更新。切替時はカード再構築 */
 function tick() {
-  const rotation = ROTATIONS[MODE];
+  const rotation = ROTATIONS[currentMode];
   const state = computeRotation(rotation, nowSec());
 
   // マップが切り替わったらカード全体を作り直す（リロード不要）
-  if (el.currentName.textContent !== state.item.map) {
+  if (el.currentNameEn.textContent !== mapEn(state.item)) {
     render();
     return;
   }
 
   el.countdown.textContent = fmtHms(state.remainSec);
-
-  const pct = Math.min(100, Math.max(0, state.progress * 100));
-  el.progressFill.style.width = pct.toFixed(2) + "%";
-  el.progressLabel.textContent = pct.toFixed(1) + "%";
-
   document.title = `${fmtRemainRough(state.remainSec)} | ${SITE_TITLE}`;
 }
 
@@ -316,49 +331,41 @@ function tick() {
  *  5. 初期化・イベント
  * ========================================================================== */
 
-/** 選択日を変更して再描画 */
-function setDate(dateStr) {
-  selectedDateStr = dateStr;
-  el.dateInput.value = dateStr;
-  renderDay();
+/** localStorage から前回のモードを復元 */
+function restoreMode() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && ROTATIONS[saved]) currentMode = saved;
+  } catch (e) { /* 使えなくても既定モードで動作 */ }
+}
+
+/** モードを切り替えて保存 */
+function setMode(mode) {
+  if (!ROTATIONS[mode]) return;
+  currentMode = mode;
+  try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) { /* 続行 */ }
+  render();
 }
 
 function init() {
   el = {
-    currentName:   document.getElementById("current-name"),
+    bgLayer:       document.getElementById("bg-layer"),
     currentVisual: document.getElementById("current-visual"),
+    currentNameEn: document.getElementById("current-name-en"),
+    currentNameJp: document.getElementById("current-name-jp"),
+    currentRange:  document.getElementById("current-range"),
     countdown:     document.getElementById("countdown"),
-    progressFill:  document.getElementById("progress-fill"),
-    progressLabel: document.getElementById("progress-label"),
-    nextName:      document.getElementById("next-name"),
-    nextStart:     document.getElementById("next-start"),
-    nextVisual:    document.getElementById("next-visual"),
-    dateInput:     document.getElementById("date-input"),
-    dayHeading:    document.getElementById("day-heading"),
+    nextNameEn:    document.getElementById("next-name-en"),
     timeline:      document.getElementById("timeline"),
   };
 
-  // 初期日付 = 今日（JST）
-  selectedDateStr = jstDateStr(nowSec());
-  el.dateInput.value = selectedDateStr;
-
-  // 日付イベント
-  el.dateInput.addEventListener("change", () => {
-    if (el.dateInput.value) setDate(el.dateInput.value);
-  });
-  document.getElementById("prev-day").addEventListener("click", () => {
-    setDate(shiftDateStr(selectedDateStr, -1));
-  });
-  document.getElementById("next-day").addEventListener("click", () => {
-    setDate(shiftDateStr(selectedDateStr, +1));
-  });
-  document.getElementById("today-btn").addEventListener("click", () => {
-    setDate(jstDateStr(nowSec()));
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => setMode(tab.dataset.mode));
   });
 
+  restoreMode();
   render();
 
-  // 1秒ごとの更新を開始
   if (tickTimer) clearInterval(tickTimer);
   tickTimer = setInterval(tick, 1000);
 }

@@ -1,5 +1,5 @@
 /* ============================================================================
- *  rotation-data.js — Apex Legends マップローテーション定義
+ *  rotation-data.js — Apex Legends マップローテーション定義（ルピンスペシャル）
  * ============================================================================
  *
  *  ★ このファイルだけを編集すればシーズン更新に対応できます。★
@@ -32,58 +32,34 @@
  *  ---------------------------------------------
  *   ・順番どおりにマップを並べます。ローテはこの配列を無限に繰り返します。
  *   ・各要素:
- *       key         … 内部キー（英語, 半角英数と _ ）。画像/色の識別に使用。
+ *       key         … 内部キー（英語, 半角英数と _ ）。色/英語名の識別に使用。
  *       map         … 画面に表示する日本語名。
+ *       image       … マップ画像のパス（例 "images/storm_point.jpg"）。
+ *                      null / 省略 すると色のグラデーションプレースホルダー。
  *       durationMin … そのマップが継続する «分» 数。
  *
  *   ・durationMin が実測とズレていたらここの数値だけ直せばOKです。
  *     （全マップ同じ長さである必要はありません。個別に設定できます）
  *
- *  3) 新しいマップを追加したとき
- *  -----------------------------
- *   ・下の MAP_META に key を追加すると、日本語名・プレースホルダー色・
- *     （あれば）画像パスを設定できます。MAP_META に無い key でも
- *     動きますが、色はキーから自動生成された既定色になります。
- *
- * ----------------------------------------------------------------------------
- *  ■ マップ画像について
- * ----------------------------------------------------------------------------
- *   MAP_META の image に画像パス（例: "images/storm_point.jpg"）を入れると
- *   その画像が表示されます。image を null / 省略 すると、マップごとに
- *   色の異なるグラデーションのプレースホルダーが表示されます。
+ *  3) 英語表記・色の追加/変更
+ *  --------------------------
+ *   ・下の MAP_META に key を追加すると、英語名(en)・プレースホルダー色を
+ *     設定できます。MAP_META に無い key でも動きますが、英語名は日本語名の
+ *     まま、色はキーから自動生成された既定色になります。
  * ========================================================================== */
 
 
 /* ----------------------------------------------------------------------------
- *  マップごとのメタ情報（表示名の補助・色・画像）
+ *  マップごとのメタ情報（英語名・プレースホルダー色）
  *   key をそろえておけば、schedule 側は key だけ書けばOK。
  * -------------------------------------------------------------------------- */
 const MAP_META = {
-  storm_point: {
-    // グラデーション用の2色（プレースホルダー表示に使用）
-    colors: ["#1b5e5a", "#0a2e33"],
-    image: null, // 例: "images/storm_point.jpg"
-  },
-  worlds_edge: {
-    colors: ["#b23a2e", "#3a1512"],
-    image: null, // 例: "images/worlds_edge.jpg"
-  },
-  e_district: {
-    colors: ["#5a3fa0", "#1a1030"],
-    image: null, // 例: "images/e_district.jpg"
-  },
-  kings_canyon: {
-    colors: ["#c08a2d", "#2e1f08"],
-    image: null,
-  },
-  olympus: {
-    colors: ["#2d7fc0", "#0a1f33"],
-    image: null,
-  },
-  broken_moon: {
-    colors: ["#3f8f8f", "#08201f"],
-    image: null,
-  },
+  storm_point: { en: "Storm Point",  colors: ["#1b5e5a", "#0a2e33"] },
+  worlds_edge: { en: "World's Edge", colors: ["#b23a2e", "#3a1512"] },
+  e_district:  { en: "E-District",   colors: ["#5a3fa0", "#1a1030"] },
+  kings_canyon:{ en: "King's Canyon", colors: ["#c08a2d", "#2e1f08"] },
+  olympus:     { en: "Olympus",      colors: ["#2d7fc0", "#0a1f33"] },
+  broken_moon: { en: "Broken Moon",  colors: ["#3f8f8f", "#08201f"] },
 };
 
 
@@ -97,9 +73,9 @@ const ROTATIONS = {
     // JST 2026/07/22 12:30 にストームポイントが開始 = UTC 2026/07/22 03:30
     baseTime: 1784691000, // UNIX時間(秒)
     schedule: [
-      { key: "storm_point", map: "ストームポイント", durationMin: 270 },
-      { key: "worlds_edge", map: "ワールズエッジ",   durationMin: 270 },
-      { key: "e_district",  map: "Eディストリクト",  durationMin: 270 },
+      { key: "storm_point", map: "ストームポイント", image: "images/storm_point.jpg", durationMin: 270 },
+      { key: "worlds_edge", map: "ワールズエッジ",   image: "images/worlds_edge.png", durationMin: 270 },
+      { key: "e_district",  map: "Eディストリクト",  image: "images/e_district.jpg",  durationMin: 270 },
     ],
   },
   ranked: {
@@ -108,9 +84,9 @@ const ROTATIONS = {
     // このファイルを編集するだけで差し替えられるようにしてある。
     baseTime: 1784691000,
     schedule: [
-      { key: "storm_point", map: "ストームポイント", durationMin: 270 },
-      { key: "worlds_edge", map: "ワールズエッジ",   durationMin: 270 },
-      { key: "e_district",  map: "Eディストリクト",  durationMin: 270 },
+      { key: "storm_point", map: "ストームポイント", image: "images/storm_point.jpg", durationMin: 270 },
+      { key: "worlds_edge", map: "ワールズエッジ",   image: "images/worlds_edge.png", durationMin: 270 },
+      { key: "e_district",  map: "Eディストリクト",  image: "images/e_district.jpg",  durationMin: 270 },
     ],
   },
 };

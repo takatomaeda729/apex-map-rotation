@@ -4,63 +4,66 @@
   <meta charset="UTF-8" />
   <!-- スマホ対応: 端末幅に合わせて描画 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Apexマップローテ</title>
-  <meta name="description" content="Apex Legends ランクの現在マップ・次のマップ・指定日のマップローテを表示します。" />
+  <title>ルピンスペシャル</title>
+  <meta name="description" content="ルピンスペシャル - Apex Legends の現在マップ・次のマップ・切り替えまでの残り時間を表示します。" />
+
+  <!-- ゲーミングフォント（Orbitron）: Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- 背景に現在マップ画像をうっすら敷くレイヤー -->
+  <div class="bg-layer" id="bg-layer"></div>
+  <div class="bg-veil"></div>
+
   <div class="wrap">
 
     <!-- ヘッダー -->
     <header class="site-header">
-      <h1 class="site-title">
-        <span class="title-accent">APEX</span> マップローテーション
-      </h1>
-      <p class="site-sub">ランク / 時刻はすべて日本時間(JST)で表示</p>
+      <div class="logo">
+        <span class="logo-main">ルピンスペシャル</span>
+        <span class="logo-sub">APEX MAP ROTATION</span>
+      </div>
+
+      <!-- モード切替タブ -->
+      <div class="tabs" role="tablist" aria-label="モード切替">
+        <button class="tab" role="tab" data-mode="battle_royale" aria-selected="false">カジュアル</button>
+        <button class="tab" role="tab" data-mode="ranked" aria-selected="false">ランク</button>
+      </div>
     </header>
 
-    <!-- 現在のマップ（メインカード / 常に現在時刻を表示） -->
-    <section class="card current-card" aria-label="現在のマップ">
-      <div class="visual" id="current-visual"></div>
-      <div class="current-body">
-        <p class="eyebrow">現在のマップ（ランク）</p>
-        <h2 class="current-name" id="current-name">—</h2>
+    <!-- メインカード（現在のマップ） -->
+    <section class="main-card" aria-label="現在のマップ">
+      <!-- 左：マップ画像 -->
+      <div class="main-visual" id="current-visual"></div>
 
-        <p class="countdown-label">切り替えまで</p>
-        <p class="countdown" id="countdown">--:--:--</p>
+      <!-- 右：情報 -->
+      <div class="main-info">
+        <div class="now-badge"><span class="dot"></span>NOW PLAYING</div>
 
-        <!-- 進行度バー -->
-        <div class="progress" aria-label="現在ローテの経過割合">
-          <div class="progress-fill" id="progress-fill"></div>
+        <h2 class="map-name-en" id="current-name-en">—</h2>
+        <p class="map-name-jp" id="current-name-jp">—</p>
+        <p class="map-range" id="current-range">--:-- 〜 --:-- (JST)</p>
+
+        <hr class="divider" />
+
+        <p class="cd-label">次のマップまで</p>
+        <p class="countdown" id="countdown">00:00:00</p>
+
+        <div class="next-line">
+          <span class="next-tag">NEXT</span>
+          <span class="next-name" id="next-name-en">—</span>
         </div>
-        <p class="progress-label"><span id="progress-label">0.0%</span> 経過</p>
       </div>
     </section>
 
-    <!-- 次のマップ -->
-    <section class="card next-card" aria-label="次のマップ">
-      <div class="visual visual-sm" id="next-visual"></div>
-      <div class="next-body">
-        <p class="eyebrow">次のマップ</p>
-        <h3 class="next-name" id="next-name">—</h3>
-        <p class="next-start">開始 <span id="next-start">—</span></p>
-      </div>
-    </section>
-
-    <!-- 日付指定のローテーション -->
-    <section class="card day-card" aria-label="指定日のローテーション">
-      <p class="eyebrow">日付を選んでその日のローテを表示</p>
-
-      <!-- 日付ナビ -->
-      <div class="date-bar">
-        <button class="date-nav" id="prev-day" aria-label="前の日">◀</button>
-        <input type="date" id="date-input" class="date-input" />
-        <button class="date-nav" id="next-day" aria-label="次の日">▶</button>
-        <button class="date-today" id="today-btn">今日</button>
-      </div>
-
-      <p class="day-heading" id="day-heading">—</p>
-      <div class="timeline" id="timeline"></div>
+    <!-- タイムライン（今後48時間） -->
+    <section class="timeline-section" aria-label="今後の予定">
+      <h3 class="section-title">UPCOMING</h3>
+      <div class="timeline-groups" id="timeline"></div>
     </section>
 
     <footer class="site-footer">
