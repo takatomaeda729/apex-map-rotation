@@ -458,16 +458,16 @@ body {
 /* ---------- フッター ---------- */
 .site-footer {
   text-align: center;
-  margin-top: 34px;
-  color: var(--text-dim);
-  font-size: 0.75rem;
+  margin-top: 48px;                 /* タイムラインと詰まりすぎないよう余白 */
+  padding: 20px 0 8px;
+  border-top: 1px solid var(--border);
 }
-.site-footer code {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 1px 5px;
-  color: var(--text);
+.site-footer p {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: #b9a9e0;                   /* 薄いパープル */
+  opacity: 0.85;
 }
 
 /* ============================================================================
