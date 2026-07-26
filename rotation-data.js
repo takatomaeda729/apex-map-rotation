@@ -21,20 +21,20 @@ const IMAGE_LIST = [
 ];
 
 const MAP_MASTER = {
-  storm_point: { nameJa: "ストームポイント", nameEn: "Storm Point", image: "images/e_district2.jpg" },
-  worlds_edge: { nameJa: "ワールズエッジ", nameEn: "World's Edge", image: "images/e_district2.jpg" },
+  storm_point: { nameJa: "ストームポイント", nameEn: "Storm Point", image: "images/storm_point.jpg" },
+  worlds_edge: { nameJa: "ワールズエッジ", nameEn: "World's Edge", image: "images/worlds_edge.png" },
   e_district: { nameJa: "Eディストリクト", nameEn: "E-District", image: "images/e_district.jpg" },
-  olympus: { nameJa: "オリンパス", nameEn: "Olympus", image: "images/e_district2.jpg" },
+  olympus: { nameJa: "オリンパス", nameEn: "Olympus", image: "images/olympus.jpg" },
   kings_canyon: { nameJa: "キングスキャニオン", nameEn: "Kings Canyon", image: "images/kings_canyon.jpg" },
   broken_moon: { nameJa: "ブロークンムーン", nameEn: "Broken Moon", image: "images/broken_moon.jpg" },
 };
 
 const ROTATION = {
   label: "ランク",
-  baseTime: 1784691000, // JST 2026/07/22 12:30 に先頭マップ開始
+  baseTime: 1785171600, // JST 2026/07/28 02:00 に先頭マップ開始
   schedule: [
-    { key: "storm_point", durationMin: 270 },
     { key: "worlds_edge", durationMin: 270 },
     { key: "e_district", durationMin: 270 },
+    { key: "storm_point", durationMin: 270 },
   ],
 };
