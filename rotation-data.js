@@ -31,7 +31,7 @@ const MAP_MASTER = {
 
 const ROTATION = {
   label: "ランク",
-  baseTime: 1785171600, // JST 2026/07/28 02:00 に先頭マップ開始
+  baseTime: 1785085200, // JST 2026/07/27 02:00 に先頭マップ開始
   schedule: [
     { key: "worlds_edge", durationMin: 270 },
     { key: "e_district", durationMin: 270 },
