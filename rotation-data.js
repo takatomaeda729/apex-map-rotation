@@ -21,10 +21,10 @@ const IMAGE_LIST = [
 ];
 
 const MAP_MASTER = {
-  storm_point: { nameJa: "ストームポイント", nameEn: "Storm Point", image: "images/storm_point.jpg" },
-  worlds_edge: { nameJa: "ワールズエッジ", nameEn: "World's Edge", image: "images/worlds_edge.png" },
+  storm_point: { nameJa: "ストームポイント", nameEn: "Storm Point", image: "images/e_district2.jpg" },
+  worlds_edge: { nameJa: "ワールズエッジ", nameEn: "World's Edge", image: "images/e_district2.jpg" },
   e_district: { nameJa: "Eディストリクト", nameEn: "E-District", image: "images/e_district.jpg" },
-  olympus: { nameJa: "オリンパス", nameEn: "Olympus", image: "images/olympus.jpg" },
+  olympus: { nameJa: "オリンパス", nameEn: "Olympus", image: "images/e_district2.jpg" },
   kings_canyon: { nameJa: "キングスキャニオン", nameEn: "Kings Canyon", image: "images/kings_canyon.jpg" },
   broken_moon: { nameJa: "ブロークンムーン", nameEn: "Broken Moon", image: "images/broken_moon.jpg" },
 };
